@@ -1,15 +1,18 @@
 package com.androidcocktail.lazyloader;
 
+import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.ViewGroup.LayoutParams;
+import android.widget.AbsListView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 
-public class MainActivity extends AppCompatActivity {
+import java.util.ArrayList;
+import java.util.List;
 
-    private static final int BATCH_SIZE = 50;
+public class MainActivity extends AppCompatActivity {
 
     private ArrayAdapter<String> adapter ;
 
@@ -21,14 +24,20 @@ public class MainActivity extends AppCompatActivity {
         ListView listView = new ListView(this);
         listView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 
-        // add ProgressBar at ListView's end to indicate data load
+        // add ProgressBar as ListView's footer to indicate data load
         listView.addFooterView(new ProgressBar(this));
 
         // set ListView as the activity's only content
         setContentView(listView);
 
         adapter = new ArrayAdapter<String>(this, android.R.layout.simple_expandable_list_item_1);
-
+        listView.setAdapter(adapter);
+        listView.setOnScrollListener(new LazyLoader() {
+            @Override
+            public void loadMore(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                loadItems();
+            }
+        });
         // Load the initial set of items into the adapter.
         loadItems();
 
@@ -36,6 +45,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadItems() {
-
+        int startIndex = adapter.getCount();
+        new FetchItemsTask(startIndex, fetchItemsTaskResponseListener).execute();
     }
+
+    private ResponseListener fetchItemsTaskResponseListener = new ResponseListener() {
+        @Override
+        public void onResponse(List<String> newItems) {
+            adapter.addAll(newItems);
+        }
+    };
+
+
+
 }
